@@ -103,12 +103,23 @@ function showScreen(name) {
 // WS CONNECTION
 // ============================================================
 function connect(onOpen) {
-  if (ws) { try{ws.close();}catch(e){} }
+  // Close old socket cleanly without triggering reconnect hint
+  if (ws) {
+    ws.onclose = null;
+    ws.onerror = null;
+    try { ws.close(); } catch(e) {}
+    ws = null;
+  }
   ws = new WebSocket(WS_BASE);
   ws.onopen = () => { if(onOpen) onOpen(); };
-  ws.onmessage = e => handleMessage(JSON.parse(e.data));
+  ws.onmessage = e => { try { handleMessage(JSON.parse(e.data)); } catch(err) { console.error(err); } };
   ws.onerror  = () => {};
-  ws.onclose  = () => { if(gameState&&gameState.phase!=='VICTORY') showReconnectHint(); };
+  ws.onclose  = () => {
+    // Only show hint if game was actually in progress
+    if (gameState && gameState.phase !== 'VICTORY' && gameState.phase !== 'CLASS_SELECTION') {
+      showReconnectHint();
+    }
+  };
 }
 
 function send(msg) {
@@ -387,7 +398,10 @@ let battleTestClasses = ['warrior','archer','mage','support'];
 function renderBattleTestClassPick() {
   const grid = document.getElementById('classpick-slots');
   if (!grid) return;
-  grid.innerHTML = '';
+  // Remove old listener by cloning the node
+  const newGrid = grid.cloneNode(false);
+  grid.parentNode.replaceChild(newGrid, grid);
+
   for (let i=0;i<4;i++) {
     const slot = document.createElement('div');
     slot.className = 'classpick-slot';
@@ -401,22 +415,24 @@ function renderBattleTestClassPick() {
           </button>
         `).join('')}
       </div>
-      <div class="class-stat-preview">${renderClassPreview(battleTestClasses[i])}</div>
+      <div class="class-stat-preview" id="btc-preview-${i}">${renderClassPreview(battleTestClasses[i])}</div>
     `;
-    grid.appendChild(slot);
+    newGrid.appendChild(slot);
   }
 
-  grid.addEventListener('click', e=>{
+  // Single listener on the grid
+  newGrid.addEventListener('click', e=>{
     const btn = e.target.closest('.class-pick-btn');
     if (!btn) return;
-    const slot = parseInt(btn.dataset.slot);
-    const cid  = btn.dataset.class;
-    battleTestClasses[slot] = cid;
-    grid.querySelectorAll(`.class-pick-btn[data-slot="${slot}"]`).forEach(b=>{
+    const slotIdx = parseInt(btn.dataset.slot);
+    const cid     = btn.dataset.class;
+    battleTestClasses[slotIdx] = cid;
+    // Update buttons in this slot only (no full re-render)
+    newGrid.querySelectorAll(`.class-pick-btn[data-slot="${slotIdx}"]`).forEach(b=>{
       b.classList.toggle('active', b.dataset.class===cid);
     });
-    const previews = slot.toString(); // refresh
-    renderBattleTestClassPick();
+    const preview = document.getElementById(`btc-preview-${slotIdx}`);
+    if (preview) preview.innerHTML = renderClassPreview(cid);
   });
 }
 
