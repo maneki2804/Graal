@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graal Hunt — Multiplayer</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     TITLE SCREEN
+════════════════════════════════════════════ -->
+<div id="screen-title" class="screen">
+  <!-- SVG Grail logo -->
+  <span class="title-grail-icon" aria-hidden="true">
+    <svg width="56" height="64" viewBox="0 0 56 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 8 L46 8 L38 34 Q28 42 18 34 Z" stroke="#d4a832" stroke-width="2.5" fill="rgba(212,168,50,0.12)" stroke-linejoin="round"/>
+      <path d="M18 34 Q28 44 38 34" stroke="#d4a832" stroke-width="2" fill="none"/>
+      <rect x="22" y="42" width="12" height="4" rx="2" fill="#d4a832" opacity="0.8"/>
+      <rect x="16" y="54" width="24" height="3" rx="1.5" fill="#d4a832" opacity="0.6"/>
+      <rect x="20" y="46" width="16" height="8" rx="1" fill="rgba(212,168,50,0.15)" stroke="#d4a832" stroke-width="1.5"/>
+    </svg>
+  </span>
+  <div class="title-wordmark">GRAAL HUNT</div>
+  <div class="title-sub">Multiplayer · Hex Strategy</div>
+
+  <div class="panel title-menu" style="margin-top:2rem">
+    <div class="section-label">Новая комната</div>
+    <div class="config-row">
+      <span class="config-label">Команды</span>
+      <div class="seg" id="teams-select" role="group" aria-label="Количество команд">
+        <button class="seg-btn" data-val="2" aria-pressed="false">2</button>
+        <button class="seg-btn active" data-val="3" aria-pressed="true">3</button>
+        <button class="seg-btn" data-val="4" aria-pressed="false">4</button>
+      </div>
+    </div>
+    <div class="config-row">
+      <span class="config-label">Таймер хода</span>
+      <div class="seg" id="timer-select" role="group" aria-label="Таймер хода">
+        <button class="seg-btn" data-val="10" aria-pressed="false">10s</button>
+        <button class="seg-btn active" data-val="15" aria-pressed="true">15s</button>
+        <button class="seg-btn" data-val="30" aria-pressed="false">30s</button>
+      </div>
+    </div>
+    <div class="config-row">
+      <span class="config-label">Туман войны</span>
+      <div class="seg" id="fog-select" role="group" aria-label="Туман войны">
+        <button class="seg-btn active" data-val="fog" aria-pressed="true">Туман</button>
+        <button class="seg-btn" data-val="open" aria-pressed="false">Открыто</button>
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-create-room" style="margin-top:1.1rem">Создать комнату</button>
+    <button class="btn-secondary" id="btn-join-room">Войти по коду</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     JOIN SCREEN
+════════════════════════════════════════════ -->
+<div id="screen-join" class="screen hidden">
+  <div class="panel join-box">
+    <h2>Войти в комнату</h2>
+    <p class="join-hint">Введи 5-значный код комнаты</p>
+    <input
+      class="code-input"
+      id="join-code-input"
+      maxlength="5"
+      placeholder="ABCDE"
+      autocomplete="off"
+      spellcheck="false"
+      inputmode="text"
+      aria-label="Код комнаты"
+    >
+    <button class="btn-primary" id="btn-do-join">Войти</button>
+    <button class="btn-secondary" id="btn-back-to-title">← Назад</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LOBBY / WAITING SCREEN
+════════════════════════════════════════════ -->
+<div id="screen-lobby" class="screen hidden">
+  <div class="panel lobby-box">
+    <div class="lobby-title">Код комнаты</div>
+    <div class="lobby-code-big" id="lobby-code">—</div>
+    <div class="lobby-code-hint">Поделись кодом с друзьями</div>
+    <div id="lobby-team-badge" class="lobby-team-badge">Команда —</div>
+    <div class="lobby-progress" id="lobby-dots"></div>
+    <div class="lobby-count" id="lobby-count">1 / 3 команды подключились</div>
+    <div class="lobby-waiting" id="lobby-waiting">Ожидаем остальных...</div>
+    <button class="btn-copy-code" id="btn-copy-code" aria-label="Скопировать код">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+        <rect x="5" y="5" width="9" height="9" rx="2"/>
+        <path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1"/>
+      </svg>
+      Скопировать код
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ABILITY SELECTION
+════════════════════════════════════════════ -->
+<div id="screen-ability" class="screen hidden">
+  <div class="ability-header">
+    <div class="ability-player-name" id="ability-player-title">Команда Red — Игрок 1</div>
+    <div id="ability-team-badge" class="ability-team-badge"></div>
+    <div id="ability-your-turn-notice" class="notice-box your-turn" style="display:none">Твой ход — выбери способность</div>
+    <div id="ability-waiting-notice" class="notice-box" style="display:none">Ждём выбора другого игрока...</div>
+  </div>
+
+  <div class="ability-grid" id="ability-grid">
+    <!-- Populated by game.js -->
+  </div>
+
+  <div class="ability-confirm-wrap">
+    <button class="btn-primary" id="btn-confirm-ability" disabled>Подтвердить выбор</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     GAME SCREEN (canvas)
+════════════════════════════════════════════ -->
+<div id="screen-game" class="screen hidden">
+  <canvas id="game-canvas" aria-label="Игровая карта"></canvas>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     HUD (overlay over game canvas)
+════════════════════════════════════════════ -->
+<div id="hud" class="hidden" style="display:none">
+
+  <!-- Top: team strips -->
+  <div id="hud-top"></div>
+
+  <!-- Timer -->
+  <div id="hud-timer" aria-live="polite" aria-label="Таймер хода">
+    <div id="timer-label">Ход</div>
+    <div id="timer-value">15</div>
+    <div id="timer-bar-wrap"><div id="timer-bar" style="width:100%"></div></div>
+  </div>
+
+  <!-- Round -->
+  <div id="round-info">Раунд <span id="round-num">1</span></div>
+
+  <!-- Bottom: player info + actions -->
+  <div id="hud-bottom">
+    <div id="player-panel">
+      <div class="player-name-hud" id="active-player-name">—</div>
+      <div class="player-ability-row">
+        <svg id="active-ability-svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>
+        <span id="active-ability-name">—</span>
+      </div>
+      <div class="item-slots" id="active-item-slots"></div>
+    </div>
+
+    <div id="action-panel">
+      <button class="action-btn" id="btn-ability-use" disabled>Способность</button>
+      <button class="action-btn gold" id="btn-end-turn" disabled>Завершить ход →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SPECTATOR OVERLAY
+════════════════════════════════════════════ -->
+<div id="spectator-overlay" class="hidden">
+  <div id="spectator-banner">
+    <strong>⚔ Идёт бой</strong>
+    <span id="spectator-text">Сражение продолжается...</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ITEM DIALOG
+════════════════════════════════════════════ -->
+<div id="item-dialog" class="hidden" role="dialog" aria-modal="true" aria-labelledby="item-dialog-heading">
+  <div class="dialog-box">
+    <h3 id="item-dialog-heading">Найден предмет</h3>
+    <div class="dialog-item-icon" id="item-found-icon" aria-hidden="true"></div>
+    <div class="dialog-item-name" id="item-found-name"></div>
+    <div class="dialog-item-desc" id="item-found-desc"></div>
+    <div class="dialog-actions" id="item-dialog-actions"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     COMBAT SCREEN
+════════════════════════════════════════════ -->
+<div id="screen-combat" class="screen hidden">
+  <canvas id="combat-canvas" aria-label="Арена боя"></canvas>
+  <div id="combat-hud">
+    <div id="combat-title-bar">
+      <!-- Left team -->
+      <div class="combat-team-info" id="combat-side-a">
+        <div class="combat-team-dot" id="ctA-dot"></div>
+        <div>
+          <div class="combat-team-name" id="ctA-name">Команда A</div>
+          <div class="combat-hp-track"><div class="combat-hp-fill" id="ctA-hp" style="width:100%"></div></div>
+        </div>
+      </div>
+      <div class="combat-vs">VS</div>
+      <!-- Right team -->
+      <div class="combat-team-info right" id="combat-side-b">
+        <div>
+          <div class="combat-team-name" id="ctB-name">Команда B</div>
+          <div class="combat-hp-track"><div class="combat-hp-fill" id="ctB-hp" style="width:100%;background:var(--gold)"></div></div>
+        </div>
+        <div class="combat-team-dot" id="ctB-dot"></div>
+      </div>
+    </div>
+
+    <div id="combat-log" aria-live="polite" aria-label="Лог боя"></div>
+
+    <div id="combat-actions">
+      <button class="action-btn" id="btn-combat-ability" style="display:none">💊 Лечить союзника</button>
+      <button class="action-btn gold" id="btn-combat-attack">Атаковать ⚔</button>
+      <button class="action-btn danger" id="btn-combat-retreat">Отступить ↩</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     VICTORY SCREEN
+════════════════════════════════════════════ -->
+<div id="screen-victory" class="screen hidden">
+  <span class="victory-grail" aria-hidden="true">
+    <svg width="64" height="72" viewBox="0 0 56 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 8 L46 8 L38 34 Q28 42 18 34 Z" stroke="#d4a832" stroke-width="2.5" fill="rgba(212,168,50,0.22)" stroke-linejoin="round"/>
+      <path d="M18 34 Q28 44 38 34" stroke="#d4a832" stroke-width="2" fill="none"/>
+      <rect x="22" y="42" width="12" height="4" rx="2" fill="#d4a832"/>
+      <rect x="20" y="46" width="16" height="8" rx="1" fill="rgba(212,168,50,0.2)" stroke="#d4a832" stroke-width="1.5"/>
+      <rect x="16" y="54" width="24" height="3" rx="1.5" fill="#d4a832" opacity="0.7"/>
+    </svg>
+  </span>
+  <div class="victory-title">ГРААЛЬ ЗАХВАЧЕН</div>
+  <div class="victory-team-name" id="victory-team-name">Команда Red победила!</div>
+  <div class="panel victory-stats" style="margin-bottom:1.4rem">
+    <div class="stat-row">Раундов сыграно: <strong id="stat-rounds">—</strong></div>
+    <div class="stat-row">Боёв проведено: <strong id="stat-battles">0</strong></div>
+  </div>
+  <button class="btn-primary" id="btn-play-again" style="width:220px">Играть снова</button>
+</div>
+
+<script src="/game.js"></script>
+</body>
+</html>
