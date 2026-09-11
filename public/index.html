@@ -12,7 +12,6 @@
      TITLE SCREEN
 ════════════════════════════════════════════ -->
 <div id="screen-title" class="screen">
-  <!-- SVG Grail logo -->
   <span class="title-grail-icon" aria-hidden="true">
     <svg width="56" height="64" viewBox="0 0 56 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M10 8 L46 8 L38 34 Q28 42 18 34 Z" stroke="#d4a832" stroke-width="2.5" fill="rgba(212,168,50,0.12)" stroke-linejoin="round"/>
@@ -50,9 +49,30 @@
         <button class="seg-btn" data-val="open" aria-pressed="false">Открыто</button>
       </div>
     </div>
-    <button class="btn-primary" id="btn-bot-game" style="margin-top:1.1rem">&#129302; Играть с ботами</button>
+    <button class="btn-primary" id="btn-battle-test" style="margin-top:1.1rem">⚔ Режим боя (тест)</button>
+    <button class="btn-secondary" id="btn-bot-game">&#129302; Играть с ботами</button>
     <button class="btn-secondary" id="btn-create-room">Создать комнату</button>
     <button class="btn-secondary" id="btn-join-room">Войти по коду</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     CLASS PICKER (for Battle Test mode)
+════════════════════════════════════════════ -->
+<div id="screen-classpick" class="screen hidden">
+  <div class="ability-header">
+    <div class="ability-player-name">Выбери состав команды</div>
+    <div class="title-sub" style="margin-top:0.3rem">4 бойца — выбери класс каждому</div>
+  </div>
+
+  <div id="classpick-slots" class="classpick-grid">
+    <!-- 4 fighter slots, populated by game.js -->
+  </div>
+
+  <div style="margin-top:1.6rem;text-align:center">
+    <button class="btn-primary" id="btn-start-battle">⚔ В бой!</button>
+    <br>
+    <button class="btn-secondary" id="btn-back-classpick" style="margin-top:0.6rem">← Назад</button>
   </div>
 </div>
 
@@ -101,14 +121,14 @@
 </div>
 
 <!-- ═══════════════════════════════════════════
-     ABILITY SELECTION
+     CLASS SELECTION (multiplayer, per team)
 ════════════════════════════════════════════ -->
 <div id="screen-ability" class="screen hidden">
   <div class="ability-header">
-    <div class="ability-player-name" id="ability-player-title">Команда Red — Игрок 1</div>
+    <div class="ability-player-name" id="ability-player-title">Команда — выбор классов</div>
     <div id="ability-team-badge" class="ability-team-badge"></div>
-    <div id="ability-your-turn-notice" class="notice-box your-turn" style="display:none">Твой ход — выбери способность</div>
-    <div id="ability-waiting-notice" class="notice-box" style="display:none">Ждём выбора другого игрока...</div>
+    <div id="ability-your-turn-notice" class="notice-box your-turn" style="display:none">Твой ход — выбери классы для команды</div>
+    <div id="ability-waiting-notice" class="notice-box" style="display:none">Ждём выбора другой команды...</div>
   </div>
 
   <div class="ability-grid" id="ability-grid">
@@ -117,6 +137,28 @@
 
   <div class="ability-confirm-wrap">
     <button class="btn-primary" id="btn-confirm-ability" disabled>Подтвердить выбор</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ARRANGE SCREEN (расстановка перед боем)
+════════════════════════════════════════════ -->
+<div id="screen-arrange" class="screen hidden">
+  <div class="ability-header">
+    <div class="ability-player-name">⚔ Расстановка перед боем</div>
+    <div class="title-sub" id="arrange-timer-label" style="margin-top:0.3rem">Осталось: <span id="arrange-countdown">10</span> с</div>
+  </div>
+
+  <div id="arrange-rows">
+    <div class="arrange-row-label">Передний ряд (ближний бой)</div>
+    <div class="arrange-row" id="arrange-front" data-row="front"></div>
+    <div class="arrange-row-label" style="margin-top:1rem">Задний ряд (дальний бой)</div>
+    <div class="arrange-row" id="arrange-back" data-row="back"></div>
+  </div>
+
+  <div style="margin-top:1.6rem;text-align:center">
+    <button class="btn-primary" id="btn-confirm-arrange">Готов!</button>
+    <div class="notice-box" id="arrange-waiting" style="display:none;margin-top:0.8rem">Ждём противника...</div>
   </div>
 </div>
 
@@ -150,31 +192,21 @@
     <div id="player-panel">
       <div class="player-name-hud" id="active-player-name">—</div>
       <div class="player-ability-row">
-        <svg id="active-ability-svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>
+        <span id="active-class-icon" style="font-size:1.1rem">⚔</span>
         <span id="active-ability-name">—</span>
+        <span id="active-level-badge" class="level-badge">Ур.1</span>
       </div>
       <div class="item-slots" id="active-item-slots"></div>
     </div>
 
     <div id="action-panel">
-      <button class="action-btn" id="btn-ability-use" disabled>Способность</button>
       <button class="action-btn gold" id="btn-end-turn" disabled>Завершить ход →</button>
     </div>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════
-     SPECTATOR OVERLAY
-════════════════════════════════════════════ -->
-<div id="spectator-overlay" class="hidden">
-  <div id="spectator-banner">
-    <strong>⚔ Идёт бой</strong>
-    <span id="spectator-text">Сражение продолжается...</span>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════
-     ITEM DIALOG
+     ITEM DIALOG (команда голосует за предмет)
 ════════════════════════════════════════════ -->
 <div id="item-dialog" class="hidden" role="dialog" aria-modal="true" aria-labelledby="item-dialog-heading">
   <div class="dialog-box">
@@ -182,6 +214,9 @@
     <div class="dialog-item-icon" id="item-found-icon" aria-hidden="true"></div>
     <div class="dialog-item-name" id="item-found-name"></div>
     <div class="dialog-item-desc" id="item-found-desc"></div>
+    <div id="item-vote-hint" style="font-size:0.82rem;color:var(--muted);margin-top:0.4rem">
+      Кому отдать предмет? (голосует вся команда, 30 с)
+    </div>
     <div class="dialog-actions" id="item-dialog-actions"></div>
   </div>
 </div>
@@ -190,10 +225,10 @@
      COMBAT SCREEN
 ════════════════════════════════════════════ -->
 <div id="screen-combat" class="screen hidden">
-  <canvas id="combat-canvas" aria-label="Арена боя"></canvas>
   <div id="combat-hud">
+
+    <!-- Teams header -->
     <div id="combat-title-bar">
-      <!-- Left team -->
       <div class="combat-team-info" id="combat-side-a">
         <div class="combat-team-dot" id="ctA-dot"></div>
         <div>
@@ -202,7 +237,6 @@
         </div>
       </div>
       <div class="combat-vs">VS</div>
-      <!-- Right team -->
       <div class="combat-team-info right" id="combat-side-b">
         <div>
           <div class="combat-team-name" id="ctB-name">Команда B</div>
@@ -212,12 +246,20 @@
       </div>
     </div>
 
+    <!-- Fighter rows — both teams side by side -->
+    <div id="combat-field">
+      <div id="combat-field-a" class="combat-field-side"></div>
+      <div id="combat-field-divider"></div>
+      <div id="combat-field-b" class="combat-field-side right-side"></div>
+    </div>
+
+    <!-- Log -->
     <div id="combat-log" aria-live="polite" aria-label="Лог боя"></div>
 
+    <!-- Actions -->
     <div id="combat-actions">
-      <button class="action-btn" id="btn-combat-ability" style="display:none">💊 Лечить союзника</button>
-      <button class="action-btn gold" id="btn-combat-attack">Атаковать ⚔</button>
-      <button class="action-btn danger" id="btn-combat-retreat">Отступить ↩</button>
+      <button class="action-btn gold" id="btn-combat-attack" style="display:none">Атаковать ⚔</button>
+      <button class="action-btn" id="btn-combat-dismiss" style="display:none">Закрыть бой →</button>
     </div>
   </div>
 </div>
@@ -236,7 +278,7 @@
     </svg>
   </span>
   <div class="victory-title">ГРААЛЬ ЗАХВАЧЕН</div>
-  <div class="victory-team-name" id="victory-team-name">Команда Red победила!</div>
+  <div class="victory-team-name" id="victory-team-name">Команда победила!</div>
   <div class="panel victory-stats" style="margin-bottom:1.4rem">
     <div class="stat-row">Раундов сыграно: <strong id="stat-rounds">—</strong></div>
     <div class="stat-row">Боёв проведено: <strong id="stat-battles">0</strong></div>

@@ -964,3 +964,211 @@ input  { font: inherit; }
   .team-name-label { display: none; }
   .team-hp-mini    { display: none; }
 }
+
+/* ============================================================
+   COMBAT REWORK — additional styles
+   ============================================================ */
+
+/* Class pick screen (battle test) */
+.classpick-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  padding: 0 1rem;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.classpick-slot {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 1rem;
+  min-width: 140px;
+  text-align: center;
+}
+.classpick-slot-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.classpick-class-btns {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+/* Class pick buttons */
+.class-pick-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #fff;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  min-width: 54px;
+}
+.class-pick-btn:hover { background: rgba(255,255,255,0.1); }
+.class-pick-btn.active {
+  background: rgba(46,196,182,0.18);
+  border-color: #2ec4b6;
+  color: #2ec4b6;
+}
+.class-stat-preview {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.4rem;
+  min-height: 2rem;
+}
+
+/* Arrange screen */
+.arrange-row-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+.arrange-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  min-height: 60px;
+  background: rgba(255,255,255,0.03);
+  border: 1.5px dashed rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0.6rem;
+}
+.arrange-fighter-card {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255,255,255,0.07);
+  border: 1.5px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+.arrange-fighter-card:hover { background: rgba(255,255,255,0.13); }
+.arrange-fighter-icon { font-size: 1.1rem; }
+.arrange-fighter-hp { font-size: 0.72rem; color: var(--muted); margin-left: 0.3rem; }
+
+/* Combat field */
+#combat-hud {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0.8rem;
+  gap: 0.6rem;
+  overflow: hidden;
+}
+#combat-field {
+  display: flex;
+  gap: 0.6rem;
+  flex: 1;
+  overflow: hidden;
+}
+.combat-field-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-y: auto;
+}
+.combat-field-side.right-side {
+  align-items: flex-end;
+}
+#combat-field-divider {
+  width: 2px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 2px;
+}
+.combat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.combat-row-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.combat-fighter-card {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  min-width: 90px;
+}
+.combat-fighter-card:hover { background: rgba(255,255,255,0.1); }
+.combat-fighter-card.dead { opacity: 0.35; cursor: default; }
+.combat-fighter-card.active-fighter {
+  background: rgba(46,196,182,0.12);
+  border-color: #2ec4b6;
+  box-shadow: 0 0 8px rgba(46,196,182,0.25);
+}
+.fighter-icon { font-size: 1rem; }
+.fighter-name { font-size: 0.75rem; flex: 1; }
+.fighter-hp-bar-wrap {
+  width: 40px; height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.fighter-hp-bar { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.fighter-hp-text { font-size: 0.68rem; color: var(--muted); min-width: 28px; text-align: right; }
+.fighter-level { font-size: 0.65rem; color: #f4a017; margin-left: 0.2rem; }
+
+/* HUD updates */
+.hud-team-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.06);
+  transition: border-color 0.2s;
+}
+.hud-team-strip.active { border-color: var(--tc, #2ec4b6); }
+.hud-team-strip.elim { opacity: 0.35; }
+.strip-name { font-size: 0.75rem; font-weight: 600; color: var(--tc, #fff); min-width: 50px; }
+.strip-level { font-size: 0.68rem; color: var(--muted); }
+.strip-fighters { font-size: 0.85rem; letter-spacing: 0.05em; }
+.strip-hpbar { width: 50px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+.strip-hpfill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+.level-badge {
+  font-size: 0.7rem;
+  background: rgba(244,160,23,0.15);
+  color: #f4a017;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  margin-left: 0.4rem;
+}
+
+/* Ability grid update — class cards */
+.ability-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  padding: 0 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
