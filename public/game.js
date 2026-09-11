@@ -975,6 +975,12 @@ function setupUI() {
   setupSeg('timer-select');
   setupSeg('fog-select');
 
+  document.getElementById('btn-bot-game').addEventListener('click', () => {
+    const turnDuration = parseInt(document.querySelector('#timer-select .seg-btn.active')?.dataset.val || 15);
+    const fogEnabled   = document.querySelector('#fog-select .seg-btn.active')?.dataset.val !== 'open';
+    send({ type: 'create_bot_game', turnDuration, fogEnabled });
+  });
+
   document.getElementById('btn-create-room').addEventListener('click', () => {
     const numTeams     = parseInt(document.querySelector('#teams-select .seg-btn.active')?.dataset.val || 3);
     const turnDuration = parseInt(document.querySelector('#timer-select .seg-btn.active')?.dataset.val || 15);

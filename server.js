@@ -612,6 +612,239 @@ class GameEngine {
 }
 
 // ============================================================
+// BOT AI
+// ============================================================
+
+/**
+ * BotController — manages all bot teams in a room.
+ * Called by Room after every state change that advances the game.
+ * Bots act with a small random delay (300–800ms) to feel natural.
+ */
+class BotController {
+  constructor(room, botTeamIdxs) {
+    this.room = room;
+    this.botTeamIdxs = new Set(botTeamIdxs); // set of teamIdx that are bots
+    this._scheduled = false;
+  }
+
+  // Abilities the bots prefer (pick random from this list)
+  static ABILITY_POOL = ['extra_move', 'saboteur', 'duelist', 'healer', 'reviver', 'smuggler'];
+
+  /** Call after any state change — schedules a bot step if it's a bot's turn */
+  tick() {
+    if (this._scheduled) return;
+    const s = this.room.engine?.state;
+    if (!s) return;
+
+    const needsBot = this._isBotTurn(s);
+    if (!needsBot) return;
+
+    this._scheduled = true;
+    const delay = 400 + Math.random() * 500; // 400–900 ms
+    setTimeout(() => {
+      this._scheduled = false;
+      this._step();
+    }, delay);
+  }
+
+  _isBotTurn(s) {
+    if (!s) return false;
+    if (s.phase === 'ABILITY_SELECTION') {
+      return s.abilitySetup && this.botTeamIdxs.has(s.abilitySetup.teamIdx);
+    }
+    if (s.phase === 'GLOBAL_MAP') {
+      return this.botTeamIdxs.has(s.activeTeamIdx);
+    }
+    if (s.phase === 'COMBAT') {
+      const c = s.combat;
+      if (!c || c.phase === 'DONE') return false;
+      const activeTeam = c.turn === 'A' ? c.teamA : c.teamB;
+      return this.botTeamIdxs.has(activeTeam.idx);
+    }
+    return false;
+  }
+
+  _step() {
+    const room = this.room;
+    const e    = room.engine;
+    if (!e) return;
+    const s = e.state;
+
+    try {
+      if (s.phase === 'ABILITY_SELECTION') {
+        this._doAbility(e, s, room);
+      } else if (s.phase === 'GLOBAL_MAP') {
+        this._doMapTurn(e, s, room);
+      } else if (s.phase === 'COMBAT') {
+        this._doCombatTurn(e, s, room);
+      }
+    } catch(err) {
+      console.error('[Bot] error in step:', err);
+    }
+  }
+
+  // ---- ABILITY SELECTION ----
+  _doAbility(e, s, room) {
+    const { teamIdx, playerIdx } = s.abilitySetup;
+    if (!this.botTeamIdxs.has(teamIdx)) return;
+    // Pick a random ability (avoid duplicates within team where possible)
+    const team   = s.teams[teamIdx];
+    const usedAb = team.players.slice(0, playerIdx).map(p => p.ability);
+    const avail  = BotController.ABILITY_POOL.filter(a => !usedAb.includes(a));
+    const pick   = avail[Math.floor(Math.random() * avail.length)] || BotController.ABILITY_POOL[0];
+    const r = e.confirmAbility(pick, teamIdx, playerIdx);
+    if (!r.ok) return;
+    room._broadcastState();
+    if (e.state.phase === 'ABILITY_SELECTION') {
+      room._notifyAbilitySetup();
+    } else {
+      room._notifyActiveTurn();
+    }
+    this.tick(); // maybe next slot is also a bot
+  }
+
+  // ---- MAP TURN ----
+  _doMapTurn(e, s, room) {
+    const ti = s.activeTeamIdx;
+    const pi = s.activePlayerIdx;
+    if (!this.botTeamIdxs.has(ti)) return;
+
+    // Handle pending item — always take it
+    if (s.pendingItem && s.pendingItem.teamIdx === ti) {
+      const r = e.resolveItem('take', null, ti, pi);
+      if (!r.ok) e.resolveItem('replace', null, ti, pi);
+      room._broadcastState();
+      room._notifyActiveTurn();
+      this.tick();
+      return;
+    }
+
+    const player = s.teams[ti].players[pi];
+    if (!player.alive) {
+      // Skip dead player — end turn
+      const r = e.endTurn(ti, pi);
+      if (r.ok) { room._broadcastState(); room._notifyActiveTurn(); this.tick(); }
+      return;
+    }
+
+    const moves = e.getValidMoves(ti, pi);
+    if (!moves.length) {
+      // No moves — end turn
+      const r = e.endTurn(ti, pi);
+      if (r.ok) { room._broadcastState(); room._notifyActiveTurn(); this.tick(); }
+      return;
+    }
+
+    // Pick best move: priority = grail > item > toward grail
+    const map = s.map;
+    const best = this._pickBestMove(moves, player, map, s);
+    const r = e.movePlayer(best.col, best.row, ti, pi);
+    room._broadcastState();
+
+    if (e.state.phase === 'COMBAT') {
+      // Combat triggered — notify and let combat tick handle it
+      const c = e.state.combat;
+      room.broadcast({ type: 'state', state: e.serialize() });
+      // Don't end turn — combat bot tick will handle it
+      this.tick();
+      return;
+    }
+
+    if (e.state.pendingItem) {
+      // Item dialog — handle on next tick
+      room._broadcastState();
+      this.tick();
+      return;
+    }
+
+    if (e.state.phase === 'GLOBAL_MAP') {
+      // End turn after moving
+      const r2 = e.endTurn(ti, pi);
+      if (r2.ok) { room._broadcastState(); room._notifyActiveTurn(); }
+    }
+    this.tick();
+  }
+
+  _pickBestMove(moves, player, map, s) {
+    // Grail position
+    const gc = map.grailCol, gr = map.grailRow;
+
+    // Score each move
+    let best = null, bestScore = -Infinity;
+    for (const m of moves) {
+      let score = 0;
+      const cell = map.cells[`${m.col},${m.row}`];
+      // Direct grail capture
+      if (m.col === gc && m.row === gr) score += 10000;
+      // Item on cell
+      if (cell?.item) score += 500;
+      // Closer to grail is better
+      const distToGrail = Hex.distance(m.col, m.row, gc, gr);
+      score -= distToGrail * 2;
+      // Small randomness to avoid identical bots
+      score += Math.random() * 3;
+
+      if (score > bestScore) { bestScore = score; best = m; }
+    }
+    return best || moves[0];
+  }
+
+  // ---- COMBAT TURN ----
+  _doCombatTurn(e, s, room) {
+    const c = s.combat;
+    if (!c) return;
+
+    if (c.phase === 'DONE') {
+      // Dismiss combat
+      const r = e.dismissCombat();
+      if (r.ok) { room._broadcastState(); room._notifyActiveTurn(); }
+      this.tick();
+      return;
+    }
+
+    const activeTeam = c.turn === 'A' ? c.teamA : c.teamB;
+    if (!this.botTeamIdxs.has(activeTeam.idx)) return;
+
+    // Never retreat — always attack
+    if (c.phase === 'RETREAT_OFFER') {
+      // Skip retreat, go straight to attack
+      c.phase = 'ACTIVE';
+    }
+
+    const r = e.combatAttack(activeTeam.idx);
+    if (!r.ok) return;
+    room._broadcastState();
+
+    if (e.state.combat?.phase === 'DONE') {
+      // Both sides done — if other side is also bot, dismiss immediately
+      const doneC = e.state.combat;
+      const otherTeam = doneC.turn === 'A' ? doneC.teamA : doneC.teamB;
+      if (this.botTeamIdxs.has(doneC.teamA.idx) && this.botTeamIdxs.has(doneC.teamB.idx)) {
+        // Both bots — dismiss right away
+        setTimeout(() => {
+          const r2 = e.dismissCombat();
+          if (r2.ok) { room._broadcastState(); room._notifyActiveTurn(); this.tick(); }
+        }, 300);
+        return;
+      }
+      // Otherwise notify next combat turn for human side
+      const nextSide = e.state.combat?.turn;
+      if (nextSide) {
+        const nextTeam = e.state.combat.turn === 'A' ? e.state.combat.teamA : e.state.combat.teamB;
+        room.send(nextTeam.idx, { type: 'your_combat_turn', side: nextSide, phase: e.state.combat.phase });
+      }
+    } else if (e.state.combat) {
+      // Notify next side
+      const nc = e.state.combat;
+      const nextTeam = nc.turn === 'A' ? nc.teamA : nc.teamB;
+      room.send(nextTeam.idx, { type: 'your_combat_turn', side: nc.turn, phase: nc.phase });
+    }
+
+    this.tick();
+  }
+}
+
+// ============================================================
 // ROOM MANAGER
 // ============================================================
 const rooms = new Map(); // roomCode → Room
@@ -630,8 +863,7 @@ class Room {
     // clients[teamIdx] = WebSocket (one per team for now)
     this.clients = new Map(); // teamIdx → ws
     this.allClients = new Set(); // all ws in room (spectators etc)
-    // Track which player within team each ws controls
-    // For simplicity: a team's WS controls all 4 players of that team
+    this.bots = null; // BotController instance (null if no bots)
   }
 
   addClient(ws, teamIdx) {
@@ -673,6 +905,26 @@ class Room {
     this._broadcastState();
     this._notifyAbilitySetup();
     this._startTimer();
+    if (this.bots) this.bots.tick();
+  }
+
+  /** Start a solo-vs-bots game: human is team 0, all others are bots */
+  startBotGame(ws) {
+    this.config.numTeams = 2;
+    this.started = true;
+    // Register human as team 0
+    this.addClient(ws, 0);
+    send(ws, { type: 'room_created', roomCode: this.code, teamIdx: 0, config: this.config });
+    send(ws, { type: 'player_joined', teamIdx: 1, totalJoined: 2, needed: 2 });
+    // Bot controls team 1
+    this.bots = new BotController(this, [1]);
+    const seed = Date.now() & 0xffff;
+    this.engine = new GameEngine(this.config, seed);
+    this.broadcast({ type: 'game_started' });
+    this._broadcastState();
+    this._notifyAbilitySetup();
+    this._startTimer();
+    this.bots.tick();
   }
 
   _broadcastState() {
@@ -739,6 +991,7 @@ class Room {
         } else {
           this._notifyActiveTurn();
         }
+        if (this.bots) this.bots.tick();
         break;
       }
 
@@ -763,6 +1016,7 @@ class Room {
         if (!r.ok) return send(ws, { type: 'error', message: r.error });
         this._broadcastState();
         this._notifyActiveTurn();
+        if (this.bots) this.bots.tick();
         break;
       }
 
@@ -792,6 +1046,7 @@ class Room {
         if (!r.ok) return send(ws, { type: 'error', message: 'Item resolve failed' });
         this._broadcastState();
         this._notifyActiveTurn();
+        if (this.bots) this.bots.tick();
         break;
       }
 
@@ -832,6 +1087,7 @@ class Room {
         if (!r.ok) return send(ws, { type: 'error', message: 'Combat not done' });
         this._broadcastState();
         this._notifyActiveTurn();
+        if (this.bots) this.bots.tick();
         break;
       }
 
@@ -908,6 +1164,22 @@ wss.on('connection', (ws, req) => {
       send(ws, { type: 'room_created', roomCode: code, teamIdx: 0, config });
       // Clean up empty rooms after 30min
       setTimeout(() => { if (!room.started && room.clients.size === 0) rooms.delete(code); }, 30*60*1000);
+      return;
+    }
+
+    if (msg.type === 'create_bot_game') {
+      const config = {
+        numTeams: 2,
+        turnDuration: Math.min(60, Math.max(5, parseInt(msg.turnDuration) || 15)),
+        fogEnabled: msg.fogEnabled !== false,
+      };
+      let code;
+      do { code = genCode(); } while (rooms.has(code));
+      const room = new Room(code, config);
+      rooms.set(code, room);
+      room.startBotGame(ws);
+      // Clean up after 2h
+      setTimeout(() => { rooms.delete(code); }, 2*60*60*1000);
       return;
     }
 
