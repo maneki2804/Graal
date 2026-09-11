@@ -8,9 +8,9 @@
 
 // ─── URL сервера ──────────────────────────────────────────────────────────────
 // Замени строку ниже на реальный Railway URL после деплоя:
-//   'wss://graal-production-4ca6.up.railway.app'
+//   'wss://graal-production.up.railway.app'
 // При локальном запуске оставь '__RAILWAY_URL__' — подключится к ws://localhost:8765
-const RAILWAY_URL = 'wss://graal-production-4ca6.up.railway.app';
+const RAILWAY_URL = 'wss://graal-production.up.railway.app';
 
 const WS_BASE = (() => {
   if (!RAILWAY_URL.startsWith('__')) return RAILWAY_URL;
