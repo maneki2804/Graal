@@ -197,15 +197,26 @@ function handleMessage(msg) {
 
     case 'battle_arrange':
       arrangeTimer = msg.arrangeTimeLeft||10;
-      renderArrangeScreen();
-      showScreen('arrange');
+      // Only show arrange for the human team
+      if (gameState?.combat?.teamA?.idx===myTeamIdx || gameState?.combat?.teamB?.idx===myTeamIdx) {
+        renderArrangeScreen();
+        showScreen('arrange');
+      }
       break;
 
     case 'combat_turn':
+      if (gameState?.combat) {
+        renderCombatScreen(gameState.combat);
+        showScreen('combat');
+      }
       updateCombatUI();
       break;
 
     case 'your_combat_turn':
+      if (gameState?.combat) {
+        renderCombatScreen(gameState.combat);
+        showScreen('combat');
+      }
       updateCombatUI(true);
       break;
 
@@ -242,8 +253,15 @@ function syncToState() {
 
   if (s.phase==='COMBAT' && s.combat) {
     if (s.combat.phase==='ARRANGE') {
-      renderArrangeScreen();
-      showScreen('arrange');
+      // Only show arrange screen if it's the human team's turn to arrange
+      if (s.combat.teamA?.idx===myTeamIdx && !s.combat.arrangeConfirmedA) {
+        renderArrangeScreen();
+        showScreen('arrange');
+      } else if (s.combat.teamB?.idx===myTeamIdx && !s.combat.arrangeConfirmedB) {
+        renderArrangeScreen();
+        showScreen('arrange');
+      }
+      // Otherwise stay on current screen and wait
     } else {
       renderCombatScreen(s.combat);
       showScreen('combat');

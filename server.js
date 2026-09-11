@@ -913,10 +913,14 @@ class BotController {
       // neutral auto-confirm
       if (c.isNeutral&&!c.arrangeConfirmedB) {
         c.arrangeConfirmedB=true;
-        if (c.arrangeConfirmedA) e._startCombatRound?.(c)||this._startCombatRound(e,c);
+        if (c.arrangeConfirmedA) this._startCombatRound(e,c);
       }
       room._broadcastState();
-      this.tick();
+      // If arrange is now done, notify combat turn
+      if (e.state.combat?.phase==='ACTIVE') {
+        room._notifyCombatTurn();
+        this.tick();
+      }
       return;
     }
 
@@ -1038,15 +1042,26 @@ class Room {
     // Immediately set classes
     this.engine.confirmClasses(humanClasses,0);
     this.engine.confirmClasses(['warrior','warrior','archer','mage'],1);
-    // Jump straight to combat between the two teams
+    // Jump straight to combat — skip ARRANGE, go directly to ACTIVE
     const s=this.engine.state;
     const teamA=s.teams[0], teamB=s.teams[1];
     s.phase='COMBAT';
     s.battleCount++;
-    s.combat=this.engine._buildCombat(teamA,teamB);
+    const combat=this.engine._buildCombat(teamA,teamB);
+    // Auto-confirm both sides and start immediately
+    combat.arrangeConfirmedA=true;
+    combat.arrangeConfirmedB=true;
+    combat.phase='ACTIVE';
+    // Build initiative queue
+    const all=[
+      ...combat.fightersA.filter(f=>f.alive).map(f=>({...f,side:'A'})),
+      ...combat.fightersB.filter(f=>f.alive).map(f=>({...f,side:'B'})),
+    ].sort((a,b)=>b.initiative-a.initiative);
+    combat.turnQueue=all; combat.currentTurnIdx=0;
+    s.combat=combat;
     this.broadcast({type:'game_started'});
     this._broadcastState();
-    this._notifyBattleArrange();
+    this._notifyCombatTurn();
     this._startTimer();
     this.bots.tick();
   }
