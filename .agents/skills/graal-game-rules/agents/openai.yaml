@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Graal Game Rules'
+  short_description: 'Trace and test Graal Hunt game rules'
+  default_prompt: 'Use $graal-game-rules to inspect the requested game rule and add a regression test.'

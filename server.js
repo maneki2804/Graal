@@ -1240,6 +1240,10 @@ function send(ws,msg) {
 // ============================================================
 // HTTP + WS SERVER
 // ============================================================
+// Keep engine imports free of sockets and timers for local unit tests.
+module.exports = { GameEngine, Hex, generateMap, computeSpawns, makePlayer };
+
+if (require.main === module) {
 const httpServer = http.createServer((req,res)=>{
   res.setHeader('Access-Control-Allow-Origin','*');
   if (req.url==='/health'){res.writeHead(200);res.end('ok');return;}
@@ -1356,3 +1360,4 @@ wss.on('connection',(ws,req)=>{
 httpServer.listen(PORT,'0.0.0.0',()=>{
   console.log(`Graal Hunt WS server listening on port ${PORT}`);
 });
+}

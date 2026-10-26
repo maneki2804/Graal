@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Graal WebSocket Debug'
+  short_description: 'Debug Graal Hunt locally over WebSocket'
+  default_prompt: 'Use $graal-websocket-debug to reproduce the connection issue against a local server.'

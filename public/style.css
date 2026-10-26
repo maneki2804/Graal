@@ -970,6 +970,14 @@ input  { font: inherit; }
    ============================================================ */
 
 /* Class pick screen (battle test) */
+#screen-classpick {
+  overflow-y: auto;
+  justify-content: flex-start;
+  justify-content: safe center;
+  padding: 1rem 0;
+}
+#screen-classpick > * { flex-shrink: 0; }
+
 .classpick-grid {
   display: flex;
   flex-wrap: wrap;

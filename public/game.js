@@ -592,8 +592,6 @@ function updateCombatUI() {
     const myTurn = cur && ((cur.side==='A'&&c.teamA.idx===myTeamIdx)||(cur.side==='B'&&c.teamB?.idx===myTeamIdx));
     if(attackBtn){ attackBtn.style.display=''; attackBtn.disabled=!myTurn; }
 
-    // Highlight active fighter & log
-    renderCombatScreen(c);
   }
 }
 
