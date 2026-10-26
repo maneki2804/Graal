@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Graal Safe Changes'
+  short_description: 'Make small and verified Graal Hunt changes'
+  default_prompt: 'Use $graal-safe-changes to implement the requested change in a separate branch.'
