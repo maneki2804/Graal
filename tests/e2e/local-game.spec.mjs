@@ -46,29 +46,38 @@ test('serves health and the title screen without JavaScript errors', async ({
   expect(errors).toEqual([]);
 });
 
-test('opens the class picker repeatedly and starts a local battle', async ({
-  page,
-}) => {
-  const errors = [];
-  recordErrors(page, errors);
-  await page.goto('/');
-  for (let i = 0; i < 2; i++) {
-    await page.locator('#btn-battle-test').click();
-    await expect(page.locator('#screen-classpick')).toBeVisible();
-    await expect(page.locator('.classpick-slot')).toHaveCount(4);
-    await page
-      .locator('#classpick-slots [data-slot="0"][data-class="mage"]')
-      .click();
-    await expect(page.locator('#btc-preview-0')).toContainText('HP:7 ATK:4');
-    if (i === 0) await page.locator('#btn-back-classpick').click();
-  }
-  await page.locator('#btn-start-battle').click();
-  await expect(page.locator('#screen-combat')).toBeVisible();
-  await expect(
-    page.getByText('Соединение потеряно. Обновите страницу.', { exact: true }),
-  ).toHaveCount(0);
-  expect(errors).toEqual([]);
-});
+for (const viewport of [
+  { width: 1280, height: 720 },
+  { width: 390, height: 844 },
+  { width: 1440, height: 1080 },
+]) {
+  test(`opens the class picker repeatedly and starts a local battle at ${viewport.width}x${viewport.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    const errors = [];
+    recordErrors(page, errors);
+    await page.goto('/');
+    for (let i = 0; i < 2; i++) {
+      await page.locator('#btn-battle-test').click();
+      await expect(page.locator('#screen-classpick')).toBeVisible();
+      await expect(page.locator('.classpick-slot')).toHaveCount(4);
+      await page
+        .locator('#classpick-slots [data-slot="0"][data-class="mage"]')
+        .click();
+      await expect(page.locator('#btc-preview-0')).toContainText('HP:7 ATK:4');
+      if (i === 0) await page.locator('#btn-back-classpick').click();
+    }
+    await page.locator('#btn-start-battle').click();
+    await expect(page.locator('#screen-combat')).toBeVisible();
+    await expect(
+      page.getByText('Соединение потеряно. Обновите страницу.', {
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+}
 
 test('two local clients join a room, choose classes and reach the map', async ({
   context,
