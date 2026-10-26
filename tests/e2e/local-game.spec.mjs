@@ -71,6 +71,13 @@ for (const viewport of [
     await page.locator('#btn-start-battle').click();
     await expect(page.locator('#screen-combat')).toBeVisible();
     await expect(
+      page.locator('#combat-field-a .combat-fighter-card'),
+    ).toHaveCount(4);
+    await expect(
+      page.locator('#combat-field-b .combat-fighter-card'),
+    ).toHaveCount(4);
+    await expect(page.locator('#btn-combat-attack')).toBeEnabled();
+    await expect(
       page.getByText('Соединение потеряно. Обновите страницу.', {
         exact: true,
       }),
